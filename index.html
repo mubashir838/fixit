@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixIt | Ultra-Advance 3D Ecosystem</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --deep-glass: rgba(10, 10, 10, 0.7);
+            --border: rgba(255, 255, 255, 0.15);
+        }
+
+        body, html { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        /* 3D Viewport */
+        #viewport { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1; }
+
+        /* Interface Overlay */
+        .overlay { position: relative; z-index: 10; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+
+        /* Glassmorphism Header */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem 5%; backdrop-filter: blur(20px); border-bottom: 1px solid var(--border);
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
+        .logo span { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+
+        /* Hero / Call to Action */
+        .hero {
+            height: 90vh; display: flex; flex-direction: column;
+            justify-content: center; padding-left: 10%;
+        }
+
+        .hero h1 { font-size: 4.5rem; line-height: 0.9; margin-bottom: 20px; }
+        .hero p { color: #888; max-width: 450px; font-size: 1.1rem; }
+
+        /* Workable Service Cards */
+        .service-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px; padding: 100px 10%;
+        }
+
+        .service-card {
+            background: var(--deep-glass); border: 1px solid var(--border);
+            padding: 40px; border-radius: 20px; transition: 0.4s;
+            backdrop-filter: blur(15px); position: relative; overflow: hidden;
+        }
+
+        .service-card:hover {
+            border-color: var(--neon); transform: translateY(-10px);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .btn-hire {
+            margin-top: 25px; width: 100%; padding: 12px;
+            background: var(--neon); border: none; color: #000;
+            font-weight: 800; border-radius: 8px; cursor: pointer;
+        }
+
+        /* Real-time Status Panel */
+        .status-panel {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--deep-glass); padding: 20px;
+            border-radius: 15px; border: 1px solid var(--neon);
+            width: 250px; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="viewport"></div>
+
+    <div class="overlay">
+        <nav class="interactive">
+            <div class="logo">FIX<span>IT</span></div>
+            <div>
+                <button class="btn-hire" style="padding: 8px 20px;">Worker Dashboard</button>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <h1>Expert Care<br>For Your Space.</h1>
+            <p>Direct access to premium plumbers, electricians, and masons across Lahore. Efficient. Reliable. 3D Verified.</p>
+            <div class="interactive" style="margin-top: 30px;">
+                <button class="btn-hire" onclick="showStatus()">Request Emergency Fix</button>
+            </div>
+        </section>
+
+        <section class="service-grid interactive">
+            <div class="service-card">
+                <i class="fas fa-pipe"></i>
+                <h3>Washroom Fix</h3>
+                <p>Leakages, pipe bursts, and fixture installations.</p>
+                <button class="btn-hire">Select Plumber</button>
+            </div>
+            <div class="service-card">
+                <i class="fas fa-bolt"></i>
+                <h3>Smart Electric</h3>
+                <p>Wiring, appliance repair, and circuit stability.</p>
+                <button class="btn-hire">Select Electrician</button>
+            </div>
+            <div class="service-card">
+                <i class="fas fa-hammer"></i>
+                <h3>Masonry Hub</h3>
+                <p>Cabinetry, wall repair, and custom wood work.</p>
+                <button class="btn-hire">Select Mason</button>
+            </div>
+        </section>
+
+        <div id="statusBox" class="status-panel">
+            <div style="font-size: 0.8rem; color: var(--neon);">SYSTEM ACTIVE</div>
+            <div style="margin-top: 10px;">Finding Pros in Lahore...</div>
+            <div style="height: 4px; background: #222; margin-top: 10px;">
+                <div id="progress" style="height: 100%; width: 0%; background: var(--neon);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS 3D ENGINE ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('viewport').appendChild(renderer.domElement);
+
+        // Create 3D Wireframe 'Home' Structure
+        const geo = new THREE.TorusKnotGeometry(1.5, 0.4, 100, 16);
+        const mat = new THREE.MeshBasicMaterial({ 
+            color: 0x00f2ff, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        scene.add(mesh);
+
+        camera.position.z = 5;
+
+        // Interaction Logic
+        function animate() {
+            requestAnimationFrame(animate);
+            mesh.rotation.x += 0.005;
+            mesh.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- WORKABLE FUNCTIONS ---
+        function showStatus() {
+            const box = document.getElementById('statusBox');
+            const bar = document.getElementById('progress');
+            box.style.display = 'block';
+            
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    alert("Pro Found! Arriving in 15 mins.");
+                } else {
+                    width++;
+                    bar.style.width = width + '%';
+                }
+            }, 50);
+        }
+
+        // Scroll-based 3D transformation
+        window.addEventListener('scroll', () => {
+            const scroll = window.scrollY;
+            mesh.position.y = scroll * 0.002;
+            mesh.scale.set(1 + scroll*0.001, 1 + scroll*0.001, 1 + scroll*0.001);
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
